@@ -44,7 +44,7 @@ error() {
 }
 
 error_no_space() {
-  error "Not enough space for GApps! Aborting"
+  error "Not enough space for Overlays! Aborting"
 }
 
 error_mounting() {
@@ -104,21 +104,8 @@ compute_apps_size() {
   fi
 }
 
-remove_big_optional_apps() {
-  ui_print "Low resource device detected, removing large extras"
-  rm -rf product/app/GoogleTTS
-  rm -rf product/app/MarkupGoogle_v2
-  rm -rf product/app/SpeechServicesByGoogle
-  rm -rf product/app/talkback
-  rm -rf product/priv-app/GoogleRestore
-  rm -rf product/priv-app/Velvet
-  rm -rf product/priv-app/VelvetTitan
-  rm -rf product/priv-app/Wellbeing
-  rm -rf system_ext/priv-app/SetupWizard
-}
-
 ui_print "**********************"
-ui_print "MindTheGapps installer"
+ui_print "WebView overlay installer"
 ui_print "**********************"
 
 ui_print "Extracting files"
@@ -126,15 +113,6 @@ TMP=/tmp
 cd "$TMP"
 unzip -o "$ZIP"
 rm -rf META-INF
-
-# Check for arch. We need to do this before extracting our toybox, since that might be
-# compiled for a different architecture. Just hope that all environments have at least
-# a proper `grep` and `uname`.
-GAPPS_ARCH=$(getprop2 $TMP/build.prop arch)
-CPU_ARCH=$(getprop ro.bionic.arch)
-if [ $GAPPS_ARCH != $CPU_ARCH ]; then
-  error "This package is built for $GAPPS_ARCH but your device is $CPU_ARCH! Aborting"
-fi
 
 ui_print "Setting up environment"
 TOYBOX="${TMP}/toybox"
@@ -197,15 +175,6 @@ error_mounting "$SYSTEM_MNT"
 fi
 SYSTEM_OUT="${SYSTEM_MNT}/system"
 
-# Compare sdk version
-GAPPS_VERSION=$(getprop2 $TMP/build.prop version)
-ANDROID_VERSION=$(getprop2 $SYSTEM_OUT/build.prop ro.build.version.sdk)
-if [ "$GAPPS_VERSION" != "$ANDROID_VERSION" ]; then
-  gapps_version_nice=$(getprop2 $TMP/build.prop version_nice)
-  android_version_nice=$(getprop2 $SYSTEM_OUT/build.prop ro.build.version.release)
-  error "This package is for Android $gapps_version_nice (SDK $GAPPS_VERSION) but your system is Android $android_version_nice (SDK $ANDROID_VERSION)! Aborting"
-fi
-
 # Ignore {product,system_ext} block devices in case they are symlinks
 # This is common on devices where maintainers have chosen not to use
 # real partitions because of their size being too small to be useful
@@ -245,33 +214,21 @@ STORAGE_BUFFER=10240
 
 cd system
 
-# Detect tangorpro
-DEVICE=$(getprop ro.build.product)
-if [ "$DEVICE" == "tangorpro" ]; then
-  ui_print "Detected tangorpro device. Deleting normal Velvet app"
-  rm -rf product/priv-app/Velvet
-else
-  rm -rf product/priv-app/VelvetTitan
-fi
-
 compute_apps_size
 
 if [ "$SYSTEM_STORAGE" -lt "$NEEDED_STORAGE_SYSTEM" ]; then
-  remove_big_optional_apps
   compute_apps_size
   if [ "$SYSTEM_STORAGE" -lt "$NEEDED_STORAGE_SYSTEM" ]; then
     error_no_space
   fi
 fi
 if [ -n "$PRODUCT_BLOCK" ] && [ "$PRODUCT_STORAGE" -lt "$NEEDED_STORAGE_PRODUCT" ]; then
-  remove_big_optional_apps
   compute_apps_size
   if [ "$PRODUCT_STORAGE" -lt "$NEEDED_STORAGE_PRODUCT" ]; then
     error_no_space
   fi
 fi
 if [ -n "$SYSTEM_EXT_BLOCK" ] && [ "$SYSTEM_EXT_STORAGE" -lt "$NEEDED_STORAGE_SYSTEM_EXT" ]; then
-  remove_big_optional_apps
   compute_apps_size
   if [ "$SYSTEM_EXT_STORAGE" -lt "$NEEDED_STORAGE_SYSTEM_EXT" ]; then
     error_no_space
@@ -279,12 +236,12 @@ if [ -n "$SYSTEM_EXT_BLOCK" ] && [ "$SYSTEM_EXT_STORAGE" -lt "$NEEDED_STORAGE_SY
 fi
 
 ui_print "Generating addon.d file"
-cat addon.d/addond_head > addon.d/30-gapps.sh
+cat addon.d/addond_head > addon.d/30-webview.sh
 for f in `find . ! -path "./addon.d/*" -type f`; do
   line=$(echo "$f" | sed 's/\.\///')
-  echo "$line" >> addon.d/30-gapps.sh
+  echo "$line" >> addon.d/30-webview.sh
 done
-cat addon.d/addond_tail >> addon.d/30-gapps.sh
+cat addon.d/addond_tail >> addon.d/30-webview.sh
 rm addon.d/addond_head addon.d/addond_tail
 
 ui_print "Preparing files for copying"
@@ -310,10 +267,6 @@ if [ -n "$PRODUCT_BLOCK" ]; then
 fi
 if [ -n "$SYSTEM_EXT_BLOCK" ]; then
   cp --preserve=a -r ./system_ext/* /system_ext
-fi
-
-if [ -e system_ext/priv-app/SetupWizard ] ; then
-  rm -rf "${SYSTEM_OUT}/system_ext/priv-app/Provision"
 fi
 
 cleanup
