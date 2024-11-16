@@ -51,9 +51,20 @@ function create() {
     cp $OVERLAY_TOP/toybox-arm64 $OUT/toybox >> $GLOG
     echo "Generating addon.d script" >> $GLOG
     test -d $OUT/system/addon.d || mkdir -p $OUT/system/addon.d
-    cp -f addond_head $OUT/system/addon.d
-    cp -f addond_tail $OUT/system/addon.d
+    addon
     echo "Writing build props..."
+}
+
+function addon() {
+    echo "Generating addon.d file"
+    cd $OUT/system
+    cat $OVERLAY_TOP/addond_head > addon.d/30-webview.sh
+    for f in `find . ! -path "./addon.d/*" -type f`; do
+      line=$(echo "$f" | sed 's/\.\///')
+      echo "$line" >> addon.d/30-webview.sh
+    done
+    cat $OVERLAY_TOP/addond_tail >> addon.d/30-webview.sh
+    cd $OVERLAY_TOP
 }
 
 function zipit() {
