@@ -2,5 +2,5 @@ out/
 overlay/**/build/
 log
 overlay/**/dist/
-*.zip
-*.md5sum
+WebViewOverlays*
+system/

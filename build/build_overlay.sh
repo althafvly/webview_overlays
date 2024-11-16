@@ -51,6 +51,7 @@ function create() {
     cp $OVERLAY_TOP/toybox-arm64 $OUT/toybox >> $GLOG
     echo "Generating addon.d script" >> $GLOG
     test -d $OUT/system/addon.d || mkdir -p $OUT/system/addon.d
+    cp $OVERLAY_TOP/push.sh $OUT/ >> $GLOG
     addon
     echo "Writing build props..."
 }

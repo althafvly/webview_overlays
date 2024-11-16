@@ -1,7 +1,7 @@
 # webview_overlays
 
 - webview_overlays allows you use third party webview providers.
-- It can be installed via recovery.
+- It can be installed via recovery or adb root.
 - Survives OTA updates.
 
 ## Disclaimer:
@@ -30,6 +30,12 @@ Check the "Releases" section on the right.
 
 ```
 adb sideload WebViewOverlays.zip
+```
+
+Or run below script if you have adb root enabled in developer options
+
+```
+bash push.sh --use_remount
 ```
 
 ## 4: Reboot your device.
