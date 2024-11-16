@@ -1,0 +1,31 @@
+name: build
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v1
+    - name: Build
+      run: |
+        ./build/build_overlay.sh
+    - uses: actions/upload-artifact@v3
+      with:
+        name: WebViewOverlays
+        path: WebViewOverlays.zip
+    - uses: actions/upload-artifact@v3
+      with:
+        name: WebViewOverlays_md5sum
+        path: WebViewOverlays.zip.md5sum
+    - uses: marvinpinto/action-automatic-releases@latest
+      if: github.ref == 'refs/heads/main'
+      with:
+        repo_token: "${{ secrets.GITHUB_TOKEN }}"
+        automatic_release_tag: "latest"
+        prerelease: false
+        title: "${{ env.GITHUB_SHA }}"
+        files: |
+          WebViewOverlays.zip
+          WebViewOverlays.zip.md5sum
