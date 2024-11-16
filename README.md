@@ -45,3 +45,11 @@ bash push.sh --use_remount
 ```
 adb shell cmd webviewupdate set-webview-implementation com.android.webview
 ```
+
+## How to add support for another webview?
+
+1. Get signature of the webview apk
+```
+unzip -p WebView.apk META-INF/*.RSA | openssl pkcs7 -in - -inform DER -print_certs
+```
+2. Add it to the list with packagename and signature
